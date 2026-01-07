@@ -1,0 +1,2 @@
+[console_scripts]
+nessusanalyzer = nessusanalyzer.cli.main:main

@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<NessusClientData_v2>
+    <Report name="Sample Scan">
+        <ReportHost name="192.168.1.10">
+            <HostProperties>
+                <tag name="host-ip">192.168.1.10</tag>
+                <tag name="host-fqdn">target.local</tag>
+                <tag name="operating-system">Linux Kernel 5.4</tag>
+            </HostProperties>
+            <ReportItem pluginID="12345" pluginName="Sample Vulnerability" pluginFamily="General" severity="3">
+                <risk_factor>High</risk_factor>
+                <description>This is a sample vulnerability for testing purposes.</description>
+                <solution>Apply patches immediately.</solution>
+                <synopsis>A vulnerability exists in the sample service.</synopsis>
+                <exploit_available>true</exploit_available>
+                <metasploit_name>exploit/linux/sample_service</metasploit_name>
+                <cvss_base_score>7.5</cvss_base_score>
+                <cve>CVE-2023-1234</cve>
+                <plugin_output>Sample output from the plugin.</plugin_output>
+            </ReportItem>
+            <ReportItem pluginID="54321" pluginName="Low Risk Issue" pluginFamily="Web" severity="1">
+                <risk_factor>Low</risk_factor>
+                <description>A minor configuration issue.</description>
+                <solution>Update configuration.</solution>
+                <cvss_base_score>3.0</cvss_base_score>
+            </ReportItem>
+        </ReportHost>
+    </Report>
+</NessusClientData_v2>

@@ -1,0 +1,85 @@
+Metadata-Version: 2.4
+Name: nessusanalyzer
+Version: 0.1.0
+Summary: A modern Nessus vulnerability output parser and reporting toolkit
+Author-email: Your Name <your.email@example.com>
+License: MIT
+Keywords: nessus,vulnerability,security,scanner,parser,reporting
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Information Technology
+Classifier: Topic :: Security
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: click>=8.1.0
+Requires-Dist: lxml>=5.1.0
+Requires-Dist: pydantic>=2.5.0
+Requires-Dist: openpyxl>=3.1.0
+Requires-Dist: fpdf2>=2.7.0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: rich>=13.7.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.11.0; extra == "dev"
+Requires-Dist: flake8>=6.1.0; extra == "dev"
+Requires-Dist: mypy>=1.7.0; extra == "dev"
+
+# NessusAnalyzer 🧠
+
+A modern vulnerability output parser and reporting toolkit. Designed for security professionals to quickly analyze Nessus results, prioritize exploitable vulnerabilities, and generate professional reports.
+
+## 🚀 Overview
+
+NessusAnalyzer simplifies the process of handling large Nessus scan files. It parses `.nessus` (XML) files, maps findings to internal models, and provides powerful filtering and reporting capabilities.
+
+### Key Features
+- **Smart Parsing**: Robust XML to Object mapping for `.nessus` files.
+- **Exploit Focus**: Automatically highlights vulnerabilities with known exploits.
+- **Multi-Format Export**: Generate reports in CSV, JSON, Excel (XLSX), and PDF.
+- **Tuable/Nessus API**: Pull scans directly from your Tenable/Nessus instance.
+- **Asset Grouping**: View vulnerabilities grouped by host or risk level.
+- **Modular Design**: Easy to extend with new parsers or formatters.
+
+## 📦 Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/ismailtsdln/NessusAnalyzer.git
+cd NessusAnalyzer
+
+# Install with pip
+pip install .
+```
+
+## 🛠️ Usage
+
+### CLI Examples
+
+```bash
+# Parse a file and show summary
+nessusanalyzer parse scan_results.nessus
+
+# Export findings to PDF
+nessusanalyzer export --format pdf scan_results.nessus --output report.pdf
+
+# Fetch latest scans from Tenable API
+nessusanalyzer fetch --api-key <KEY> --secret-key <SECRET>
+```
+
+## 🧠 Core Architecture
+
+- **Core**: Pydantic-based data models and XML parser.
+- **Analyzer**: Risk scoring, exploit mapping, and business logic.
+- **Formatter**: Pluggable export modules for various formats.
+- **CLI**: Rich command-line interface powered by `click`.
+
+## 🧪 Testing
+
+```bash
+pytest tests/
+```
+
+## 📜 License
+
+This project is licensed under the MIT License.
