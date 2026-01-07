@@ -34,3 +34,33 @@ def test_analyzer_summary():
     assert summary["High"] == 1
     assert summary["Low"] == 1
     assert summary["Critical"] == 0
+
+def test_formatters(tmp_path):
+    from nessusanalyzer.formatter.csv import CSVFormatter
+    from nessusanalyzer.formatter.json import JSONFormatter
+    from nessusanalyzer.formatter.excel import ExcelFormatter
+    from nessusanalyzer.formatter.pdf import PDFFormatter
+
+    sample_file = os.path.join(os.path.dirname(__file__), "sample.nessus")
+    parser = NessusParser(sample_file)
+    report = parser.parse()
+
+    # CSV
+    csv_file = tmp_path / "output.csv"
+    CSVFormatter(report).export(str(csv_file))
+    assert csv_file.exists()
+
+    # JSON
+    json_file = tmp_path / "output.json"
+    JSONFormatter(report).export(str(json_file))
+    assert json_file.exists()
+
+    # XLSX
+    xlsx_file = tmp_path / "output.xlsx"
+    ExcelFormatter(report).export(str(xlsx_file))
+    assert xlsx_file.exists()
+
+    # PDF
+    pdf_file = tmp_path / "output.pdf"
+    PDFFormatter(report).export(str(pdf_file))
+    assert pdf_file.exists()

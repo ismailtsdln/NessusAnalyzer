@@ -16,12 +16,14 @@ class NessusParser:
             root = self.tree.getroot()
 
             report_node = root.find("Report")
-            report_name = report_node.get("name")
+            if report_node is None:
+                raise ValueError("Invalid .nessus file: <Report> tag not found.")
             
+            report_name = report_node.get("name", "Unnamed Report")
             report = NessusReport(name=report_name)
 
             for host_node in report_node.findall("ReportHost"):
-                host_name = host_node.get("name")
+                host_name = host_node.get("name", "Unknown Host")
                 host = NessusHost(name=host_name)
 
                 # Extract host properties
@@ -30,6 +32,8 @@ class NessusParser:
                     for tag in host_properties.findall("tag"):
                         name = tag.get("name")
                         value = tag.text
+                        if not name or not value:
+                            continue
                         if name == "host-ip":
                             host.ip = value
                         elif name == "host-fqdn":
@@ -39,30 +43,40 @@ class NessusParser:
 
                 # Extract findings
                 for item in host_node.findall("ReportItem"):
-                    finding_data = {
-                        "pluginID": item.get("pluginID"),
-                        "pluginName": item.get("pluginName"),
-                        "pluginFamily": item.get("pluginFamily"),
-                        "severity": int(item.get("severity")),
-                        "riskFactor": item.findtext("risk_factor", "None"),
-                        "description": item.findtext("description", ""),
-                        "solution": item.findtext("solution"),
-                        "synopsis": item.findtext("synopsis"),
-                        "exploitAvailable": item.findtext("exploit_available") == "true",
-                        "exploitCodeMaturity": item.findtext("exploit_code_maturity"),
-                        "metasploitName": item.findtext("metasploit_name"),
-                        "pluginOutput": item.findtext("plugin_output"),
-                        "cvssBaseScore": None,
-                        "cvssVector": item.findtext("cvss_vector"),
-                        "cve": [cve.text for cve in item.findall("cve")]
-                    }
+                    try:
+                        severity_str = item.get("severity", "0")
+                        severity = int(severity_str) if severity_str.isdigit() else 0
+                        
+                        finding_data = {
+                            "pluginID": item.get("pluginID", "0"),
+                            "pluginName": item.get("pluginName", "Unknown Plugin"),
+                            "pluginFamily": item.get("pluginFamily", "None"),
+                            "severity": severity,
+                            "riskFactor": item.findtext("risk_factor", "None"),
+                            "description": item.findtext("description", ""),
+                            "solution": item.findtext("solution"),
+                            "synopsis": item.findtext("synopsis"),
+                            "exploitAvailable": item.findtext("exploit_available") == "true",
+                            "exploitCodeMaturity": item.findtext("exploit_code_maturity"),
+                            "metasploitName": item.findtext("metasploit_name"),
+                            "pluginOutput": item.findtext("plugin_output"),
+                            "cvssBaseScore": None,
+                            "cvssVector": item.findtext("cvss_vector"),
+                            "cve": [cve.text for cve in item.findall("cve") if cve.text]
+                        }
 
-                    cvss_score = item.findtext("cvss_base_score")
-                    if cvss_score:
-                        finding_data["cvssBaseScore"] = float(cvss_score)
+                        cvss_score = item.findtext("cvss_base_score")
+                        if cvss_score:
+                            try:
+                                finding_data["cvssBaseScore"] = float(cvss_score)
+                            except ValueError:
+                                logger.warning(f"Malformed CVSS score '{cvss_score}' for plugin {finding_data['pluginID']}")
 
-                    finding = NessusFinding(**finding_data)
-                    host.findings.append(finding)
+                        finding = NessusFinding(**finding_data)
+                        host.findings.append(finding)
+                    except Exception as item_err:
+                        logger.warning(f"Error parsing ReportItem: {item_err}")
+                        continue
 
                 report.hosts.append(host)
 

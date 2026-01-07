@@ -1,5 +1,8 @@
 import click
-import os
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.progress import Progress
 from ..core.parser import NessusParser
 from ..analyzer.engine import AnalyzerEngine
 from ..formatter.csv import CSVFormatter
@@ -7,6 +10,8 @@ from ..formatter.json import JSONFormatter
 from ..formatter.excel import ExcelFormatter
 from ..formatter.pdf import PDFFormatter
 from ..utils.logger import logger, setup_logger
+
+console = Console()
 
 @click.group()
 @click.option('--debug', is_flag=True, help="Enable debug logging")
@@ -20,21 +25,40 @@ def cli(debug):
 @click.option('--summary', is_flag=True, help="Show a brief summary of findings")
 def parse(file, summary):
     """Parses a .nessus file and displays findings."""
-    parser = NessusParser(file)
-    report = parser.parse()
+    if not file.endswith('.nessus'):
+        console.print("[bold red]Error:[/bold red] Input file must have a .nessus extension.")
+        return
+
+    with Progress(transient=True) as progress:
+        progress.add_task("[cyan]Parsing Nessus file...", total=None)
+        parser = NessusParser(file)
+        report = parser.parse()
     
     if summary:
         analyzer = AnalyzerEngine(report)
         risk_summary = analyzer.get_risk_summary()
-        click.echo(f"\nReport Summary for: {report.name}")
-        click.echo("-" * 40)
+        
+        table = Table(title=f"Report Summary: [bold blue]{report.name}[/bold blue]", show_header=True, header_style="bold magenta")
+        table.add_column("Severity", style="dim")
+        table.add_column("Count", justify="right")
+        
+        severity_styles = {
+            "Critical": "bold red",
+            "High": "bold orange3",
+            "Medium": "bold yellow",
+            "Low": "bold green",
+            "Info": "bold blue"
+        }
+        
         for severity, count in risk_summary.items():
-            click.echo(f"{severity:10}: {count}")
+            table.add_row(severity, str(count), style=severity_styles.get(severity, "white"))
+        
+        console.print(table)
         
         exploitable = analyzer.get_exploitable_vulnerabilities()
-        click.echo(f"Exploitable findings: {len(exploitable)}")
+        console.print(Panel(f"Exploitable findings: [bold red]{len(exploitable)}[/bold red]", expand=False))
     else:
-        click.echo(f"Successfully parsed {file}. Use --summary to see details.")
+        console.print(f"[green]Successfully parsed[/green] {file}. Use [bold]--summary[/bold] to see details.")
 
 @cli.command()
 @click.argument('file', type=click.Path(exists=True))
@@ -42,23 +66,26 @@ def parse(file, summary):
 @click.option('--output', '-o', type=click.Path(), help="Output file path")
 def export(file, format, output):
     """Parses a .nessus file and exports it to the specified format."""
-    parser = NessusParser(file)
-    report = parser.parse()
-    
-    if not output:
-        output = f"output.{format}"
+    with Progress(transient=True) as progress:
+        progress.add_task(f"[cyan]Exporting to {format}...", total=None)
+        parser = NessusParser(file)
+        report = parser.parse()
+        
+        if not output:
+            output = f"output.{format}"
 
-    if format == 'csv':
-        formatter = CSVFormatter(report)
-    elif format == 'json':
-        formatter = JSONFormatter(report)
-    elif format == 'xlsx':
-        formatter = ExcelFormatter(report)
-    elif format == 'pdf':
-        formatter = PDFFormatter(report)
+        if format == 'csv':
+            formatter = CSVFormatter(report)
+        elif format == 'json':
+            formatter = JSONFormatter(report)
+        elif format == 'xlsx':
+            formatter = ExcelFormatter(report)
+        elif format == 'pdf':
+            formatter = PDFFormatter(report)
+        
+        formatter.export(output)
     
-    formatter.export(output)
-    click.echo(f"Report exported to {output}")
+    console.print(f"[bold green]✓[/bold green] Report exported to [bold blue]{output}[/bold blue]")
 
 @cli.command()
 @click.argument('file', type=click.Path(exists=True))
@@ -70,13 +97,17 @@ def exploitable(file):
     exploitable_findings = analyzer.get_exploitable_vulnerabilities()
     
     if not exploitable_findings:
-        click.echo("No exploitable vulnerabilities found.")
+        console.print("[yellow]No exploitable vulnerabilities found.[/yellow]")
         return
 
-    click.echo(f"\nFound {len(exploitable_findings)} exploitable vulnerabilities:")
-    click.echo("-" * 60)
+    table = Table(title=f"Found [bold red]{len(exploitable_findings)}[/bold red] exploitable vulnerabilities", show_header=True, header_style="bold red")
+    table.add_column("Plugin ID", style="dim")
+    table.add_column("Vulnerability Name")
+
     for finding in exploitable_findings:
-        click.echo(f"- {finding.plugin_name} (Plugin ID: {finding.plugin_id})")
+        table.add_row(finding.plugin_id, finding.plugin_name)
+    
+    console.print(table)
 
 def main():
     cli()
